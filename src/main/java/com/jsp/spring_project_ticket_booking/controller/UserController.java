@@ -1,8 +1,47 @@
 package com.jsp.spring_project_ticket_booking.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.jsp.spring_project_ticket_booking.dto.LoginDto;
+import com.jsp.spring_project_ticket_booking.dto.UserDto;
+import com.jsp.spring_project_ticket_booking.service.UserService;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @Controller
+@RequiredArgsConstructor
 public class UserController {
 	
+	private final UserService userService;
+	
+	@GetMapping("/")
+	public String loadMain() {
+		return "main.html";
+	}
+	
+	@GetMapping("/register")
+	public String loadRegister(UserDto userDto) {
+		return "register.html";
+	}
+	
+	@PostMapping("/register")
+	public String register(@Valid UserDto userDto, BindingResult result) {
+		return userService.register(userDto,result);
+	}
+	
+	@GetMapping("/login")
+	public String loadLogin() {
+		return "login.html";
+	}
+	
+	@PostMapping("/login")
+	public String login(LoginDto loginDto, RedirectAttributes attributes, HttpSession session) {
+		return userService.login(loginDto, attributes, session);
+	}
 }

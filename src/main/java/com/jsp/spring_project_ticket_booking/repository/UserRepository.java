@@ -7,5 +7,6 @@ import com.jsp.spring_project_ticket_booking.entity.User;
 public interface UserRepository extends JpaRepository<User, Long>{
 
 	boolean existsByEmail(String email);
-
+	
+	User findByEmail(String email);
 }

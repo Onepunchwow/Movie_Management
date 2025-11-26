@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+    <div align = "center">
+        <div class = "message" th:if="${pass != null || fail != null}">
+            <h2 style="color:green" th:text="${pass}"></h2>
+            <h1 style="color:red;" th:text="${fail}"></h1>
+        </div>
+        <form action="/login" method="post">
+            Email-id: <input type="email" name="email"/>
+            <br><br>
+            Password: <input type="password" name="password"/>
+            <br><br>
+            <button>Login</button>
+        </form>
+    </div>
+</body>
+</html>

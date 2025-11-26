@@ -5,6 +5,23 @@
 <title>Main Page</title>
 </head>
 <body>
-<h1>This is main page</h1>
+<div align = "center">
+    <h1>Main Page</h1>
+
+    <div class = "message" th:if="${pass != null || fail != null}">
+        <h2 style="color:green" th:text="${pass}"></h2>
+        <h1 style="color:red;" th:text="${fail}"></h1>
+    </div>
+
+    <div th:if="${session.user == null}">
+        <a href="/login"><button>Login</button></a>
+        <a href="/register"><button>Register</button></a>
+    </div>
+
+    <div th:if="${session.user}">
+        <a href="/logout"><button>Logout</button></a>
+    </div>
+</div>
+
 </body>
 </html>
