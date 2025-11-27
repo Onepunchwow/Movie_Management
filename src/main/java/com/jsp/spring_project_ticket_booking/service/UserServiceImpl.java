@@ -1,5 +1,7 @@
 package com.jsp.spring_project_ticket_booking.service;
 
+import java.security.SecureRandom;
+
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -9,6 +11,7 @@ import com.jsp.spring_project_ticket_booking.dto.UserDto;
 import com.jsp.spring_project_ticket_booking.entity.User;
 import com.jsp.spring_project_ticket_booking.repository.UserRepository;
 import com.jsp.spring_project_ticket_booking.util.AES;
+import com.jsp.spring_project_ticket_booking.util.EmailHelper;
 
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -20,15 +23,25 @@ public class UserServiceImpl implements UserService{
 
 	
 	private final UserRepository userRepository;
+	private final SecureRandom secureRandom;
+	private final EmailHelper emailHelper;
 	
 	@Override
 	public String register(@Valid UserDto userDto, BindingResult result) {
 		if(!userDto.getPassword().equals(userDto.getConfirmPassword())) {
-			result.rejectValue("confirmPassword", "error..confirmPassword", "* Password and confirm password should be same");
+			result.rejectValue("confirmPassword", "error.confirmPassword", "* Password and confirm password should be same");
+		}
+		if(userRepository.existsByEmail(userDto.getEmail())) {
+			result.rejectValue("email", "error.email", "* Email already exists");
+		}
+		if(userRepository.existsByMobile(userDto.getMobile())) {
+			result.rejectValue("mobile", "error.mobile", "* Mobile already exists");
 		}
 		if(result.hasErrors()) {
 			return "register.html";
 		}else {
+			int otp = secureRandom.nextInt(100000,1000000);
+			emailHelper.sendOtp(otp, userDto.getName(), userDto.getEmail());
 			return "main.html";
 		}
 	}
@@ -43,12 +56,19 @@ public class UserServiceImpl implements UserService{
 			if(AES.decrypt(user.getPassword()).equals(loginDto.getPassword())) {
 				session.setAttribute("user", user);
 				attributes.addFlashAttribute("pass", "Login sucess");
-				return "redirect:/";
+				return "redirect:/main";
 			}else {
 				attributes.addFlashAttribute("fail", "Invalid password");
 				return "redirect:/login";
 			}
 		}
+	}
+
+	@Override
+	public String logout(HttpSession session, RedirectAttributes attributes) {
+		session.removeAttribute("user");
+		attributes.addFlashAttribute("pass","Logout Sucess");
+		return "redirect:/main";
 	}
 
 }
