@@ -1,5 +1,7 @@
 package com.jsp.spring_project_ticket_booking.controller;
 
+import java.io.IOException;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -11,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.jsp.spring_project_ticket_booking.dto.LoginDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
+import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 import com.jsp.spring_project_ticket_booking.service.UserService;
 
@@ -78,6 +81,20 @@ public class UserController {
 	public String forgotPassword(@RequestParam String email, RedirectAttributes attributes) {
 		return userService.forgotPassword(email, attributes);
 	}
+	
+	@GetMapping("/manage-users")
+	public String viewUsers(HttpSession session,RedirectAttributes attributes,ModelMap map) {
+		return userService.manageUsers(session,attributes,map);
+	}
+	
+	@GetMapping("/block/{id}")
+	public String block(@PathVariable Long id,HttpSession session,RedirectAttributes attributes) {
+		return userService.blockUser(id,session,attributes);
+	}
+	@GetMapping("/un-block/{id}")
+	public String unBlock(@PathVariable Long id,HttpSession session,RedirectAttributes attributes) {
+		return userService.unBlockUser(id,session,attributes);
+	}
 
 	@GetMapping("/reset-password")
 	public String resetPassword(PasswordDto passwordDto) {
@@ -87,5 +104,20 @@ public class UserController {
 	@PostMapping("/reset-password")
 	public String resetPassword(@Valid PasswordDto passwordDto,BindingResult result,ModelMap map, RedirectAttributes attributes) {
 		return userService.resetPassword(passwordDto,result, attributes,map);
+	}
+	
+	@GetMapping("/manage-theaters")
+	public String manageTheater(ModelMap map, RedirectAttributes attributes, HttpSession session) {
+		return userService.manageTheater(map, attributes, session);
+	}
+
+	@GetMapping("/add-theater")
+	public String addTheater(TheaterDto theaterDto, RedirectAttributes attributes, HttpSession session) {
+		return userService.loadAddTheater(session, attributes, theaterDto);
+	}
+	
+	@PostMapping("/add-theater")
+	public String addTheater(@Valid TheaterDto theaterDto,BindingResult result,RedirectAttributes attributes,HttpSession session) throws IOException {
+		return userService.addTheater(session, attributes, theaterDto,result);
 	}
 }

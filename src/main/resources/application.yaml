@@ -30,5 +30,5 @@ spring:
           starttls:
             enable: true
 admin:
-  password: Pratham57!?
+  password: Qwerty12@
   email: nimbalkarpratham2002@gmail.com
