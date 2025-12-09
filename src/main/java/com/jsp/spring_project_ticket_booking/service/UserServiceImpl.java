@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.jsp.spring_project_ticket_booking.dto.LoginDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
+import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 import com.jsp.spring_project_ticket_booking.entity.Theater;
@@ -310,5 +311,51 @@ public class UserServiceImpl implements UserService{
 		attributes.addFlashAttribute("pass", "Theater Added Successfully");
 		return "redirect:/manage-theaters";
 
+	}
+
+	@Override
+	public String editTheater(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String updateTheater(HttpSession session, RedirectAttributes attributes, @Valid TheaterDto theaterDto,
+			BindingResult result, Long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String manageScreens(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String addScreen(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map,
+			ScreenDto screenDto) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String addScreen(ScreenDto screenDto, BindingResult result, HttpSession session,
+			RedirectAttributes attributes) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String deleteTheater(Long id, HttpSession session, RedirectAttributes attributes) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			theaterRepository.deleteById(id);
+			attributes.addFlashAttribute("pass", "Theater Removed Success");
+			return "redirect:/manage-theaters";
+		}
 	}
 }

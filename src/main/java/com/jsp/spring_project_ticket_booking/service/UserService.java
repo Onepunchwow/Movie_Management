@@ -8,6 +8,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.jsp.spring_project_ticket_booking.dto.LoginDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
+import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 
@@ -43,5 +44,18 @@ public interface UserService {
 
 	String addTheater(HttpSession session, RedirectAttributes attributes, @Valid TheaterDto theaterDto,
 			BindingResult result) throws IllegalStateException, IOException;
+
+	String editTheater(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map);
+
+	String updateTheater(HttpSession session, RedirectAttributes attributes, @Valid TheaterDto theaterDto,
+			BindingResult result, Long id);
+
+	String manageScreens(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map);
+
+	String addScreen(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map, ScreenDto screenDto);
+	
+	String addScreen(ScreenDto screenDto, BindingResult result,HttpSession session, RedirectAttributes attributes);
+
+	String deleteTheater(Long id, HttpSession session, RedirectAttributes attributes);
 
 }
