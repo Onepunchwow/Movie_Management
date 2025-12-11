@@ -315,15 +315,58 @@ public class UserServiceImpl implements UserService{
 
 	@Override
 	public String editTheater(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			Theater theater = theaterRepository.findById(id).orElse(null);
+			TheaterDto theaterDto = new TheaterDto(theater.getName(), theater.getAddress(), theater.getLocationLink(),
+					null);
+			map.put("id", theater.getId());
+			map.put("imageLink", theater.getImageLocation());
+			map.put("theaterDto", theaterDto);
+			return "edit-theater.html";
+		}
 	}
 
 	@Override
 	public String updateTheater(HttpSession session, RedirectAttributes attributes, @Valid TheaterDto theaterDto,
 			BindingResult result, Long id) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			Theater theater = new Theater();
+			theater.setId(id);
+			theater.setName(theaterDto.getName());
+			theater.setAddress(theaterDto.getAddress());
+			theater.setLocationLink(theaterDto.getLocationLink());
+
+			MultipartFile image = theaterDto.getImage();
+			if (image.isEmpty()) {
+				theater.setImageLocation(theaterRepository.findById(id).get().getImageLocation());
+			} else {
+				String baseUploadDir = System.getProperty("user.dir") + "/uploads/theaters/";
+				File directory = new File(baseUploadDir);
+				if (!directory.exists())
+					directory.mkdirs();
+				String filename = theaterDto.getName() + image.getOriginalFilename();
+				File destination = new File(directory, filename);
+				try {
+					image.transferTo(destination);
+				} catch (IllegalStateException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				theater.setImageLocation("/uploads/theaters/" + filename);
+			}
+			theaterRepository.save(theater);
+			attributes.addFlashAttribute("pass", "Theater Updated Successfully");
+			return "redirect:/manage-theaters";
+		}
 	}
 
 	@Override
