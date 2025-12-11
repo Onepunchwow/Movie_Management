@@ -16,8 +16,10 @@ import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
 import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
+import com.jsp.spring_project_ticket_booking.entity.Screen;
 import com.jsp.spring_project_ticket_booking.entity.Theater;
 import com.jsp.spring_project_ticket_booking.entity.User;
+import com.jsp.spring_project_ticket_booking.repository.ScreenRepository;
 import com.jsp.spring_project_ticket_booking.repository.TheaterRepository;
 import com.jsp.spring_project_ticket_booking.repository.UserRepository;
 import com.jsp.spring_project_ticket_booking.util.AES;
@@ -37,6 +39,7 @@ public class UserServiceImpl implements UserService{
 	private final EmailHelper emailHelper;
 	private final RedisService redisService;
 	private final TheaterRepository theaterRepository;
+	private final ScreenRepository screenRepository;
 
 
 	@Override
@@ -371,22 +374,60 @@ public class UserServiceImpl implements UserService{
 
 	@Override
 	public String manageScreens(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			Theater theater = theaterRepository.findById(id).get();
+			List<Screen> screens = screenRepository.findByTheater(theater);
+			map.put("screens", screens);
+			map.put("id", id);
+			return "manage-screens.html";
+		}
 	}
 
 	@Override
 	public String addScreen(Long id, HttpSession session, RedirectAttributes attributes, ModelMap map,
 			ScreenDto screenDto) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+//			Theater theater = theaterRepository.findById(id).get();
+			screenDto.setTheaterId(id);
+			map.put("screenDto", screenDto);
+			return "add-screen.html";
+		}
 	}
 
 	@Override
 	public String addScreen(ScreenDto screenDto, BindingResult result, HttpSession session,
 			RedirectAttributes attributes) {
-		// TODO Auto-generated method stub
-		return null;
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			Theater theater = theaterRepository.findById(screenDto.getTheaterId()).get();
+			if (screenRepository.existsByNameAndTheater(screenDto.getName(), theater)) {
+				result.rejectValue("name", "error.name", "* Screen Already Exist in The Theater");
+			}
+			if (result.hasErrors())
+				return "add-screen.html";
+			else {
+				Screen screen = new Screen();
+				screen.setName(screenDto.getName());
+				screen.setTheater(theater);
+				screen.setType(screenDto.getType());
+				screenRepository.save(screen);
+				theater.setScreenCount(theater.getScreenCount() + 1);
+				theaterRepository.save(theater);
+				attributes.addFlashAttribute("pass", "Screen Added Success");
+				return "redirect:/manage-screens/" + theater.getId();
+			}
+		}
 	}
 
 	@Override
