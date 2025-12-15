@@ -12,17 +12,22 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.jsp.spring_project_ticket_booking.dto.LoginDto;
+import com.jsp.spring_project_ticket_booking.dto.MovieDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
 import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
+import com.jsp.spring_project_ticket_booking.entity.Movie;
 import com.jsp.spring_project_ticket_booking.entity.Screen;
+import com.jsp.spring_project_ticket_booking.entity.Seat;
 import com.jsp.spring_project_ticket_booking.entity.Theater;
 import com.jsp.spring_project_ticket_booking.entity.User;
+import com.jsp.spring_project_ticket_booking.repository.MovieRepository;
 import com.jsp.spring_project_ticket_booking.repository.ScreenRepository;
 import com.jsp.spring_project_ticket_booking.repository.TheaterRepository;
 import com.jsp.spring_project_ticket_booking.repository.UserRepository;
 import com.jsp.spring_project_ticket_booking.util.AES;
+import com.jsp.spring_project_ticket_booking.util.CloudinaryHelper;
 import com.jsp.spring_project_ticket_booking.util.EmailHelper;
 
 import jakarta.servlet.http.HttpSession;
@@ -40,6 +45,8 @@ public class UserServiceImpl implements UserService{
 	private final RedisService redisService;
 	private final TheaterRepository theaterRepository;
 	private final ScreenRepository screenRepository;
+	private final MovieRepository movieRepository;
+	private final CloudinaryHelper cloudinaryHelper;
 
 
 	@Override
@@ -294,20 +301,13 @@ public class UserServiceImpl implements UserService{
 			return "add-theater.html";
 		}
 
-		String baseUploadDir = System.getProperty("user.dir") + "/uploads/theaters/";
-		File directory = new File(baseUploadDir);
-		if (!directory.exists())
-			directory.mkdirs();
-
-		String filename = theaterDto.getName() + image.getOriginalFilename();
-		File destination = new File(directory, filename);
-		image.transferTo(destination);
+		
 
 		Theater theater = new Theater();
 		theater.setName(theaterDto.getName());
 		theater.setAddress(theaterDto.getAddress());
 		theater.setLocationLink(theaterDto.getLocationLink());
-		theater.setImageLocation("/uploads/theaters/" + filename);
+		theater.setImageLocation(cloudinaryHelper.getTheaterImageLink(image));
 
 		theaterRepository.save(theater);
 
@@ -396,6 +396,7 @@ public class UserServiceImpl implements UserService{
 			return "redirect:/login";
 		} else {
 //			Theater theater = theaterRepository.findById(id).get();
+			theaterRepository.findById(id).get();
 			screenDto.setTheaterId(id);
 			map.put("screenDto", screenDto);
 			return "add-screen.html";
@@ -437,6 +438,11 @@ public class UserServiceImpl implements UserService{
 			attributes.addFlashAttribute("fail", "Invalid Session");
 			return "redirect:/login";
 		} else {
+			Theater theater = theaterRepository.findById(id).orElseThrow();
+			if (theater.getScreenCount() > 0) {
+				List<Screen> screens = screenRepository.findByTheater(theater);
+				screenRepository.deleteAll(screens);
+			}
 			theaterRepository.deleteById(id);
 			attributes.addFlashAttribute("pass", "Theater Removed Success");
 			return "redirect:/manage-theaters";
@@ -493,6 +499,87 @@ public class UserServiceImpl implements UserService{
 			screenRepository.save(screen);
 			attributes.addFlashAttribute("pass", "Screen Updated Success");
 			return "redirect:/manage-screens/" + screen.getTheater().getId();
+		}
+	}
+
+	@Override
+	public String manageSeats(Long id, HttpSession session, ModelMap map, RedirectAttributes attributes) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			Screen screen = screenRepository.findById(id).orElseThrow();
+			List<Seat> seats = screen.getSeats();
+			map.put("seats", seats);
+			map.put("screenId", id);
+			return "manage-seats.html";
+		}
+	}
+
+	@Override
+	public String addSeats(Long id, HttpSession session, ModelMap map, RedirectAttributes attributes) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+//			Screen screen = screenRepository.findById(id).orElseThrow();
+			screenRepository.findById(id).orElseThrow();
+			map.put("id", id);
+			return "add-seats.html";
+		}
+	}
+
+	@Override
+	public String manageMovies(HttpSession session, RedirectAttributes attributes, ModelMap map) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			List<Movie> movies = movieRepository.findAll();
+			map.put("movies", movies);
+			return "manage-movies.html";
+		}
+	}
+
+	@Override
+	public String loadAddMovie(MovieDto movieDto, RedirectAttributes attributes, HttpSession session) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+			return "add-movie.html";
+		}
+	}
+
+	@Override
+	public String addMovie(@Valid MovieDto movieDto, BindingResult result, RedirectAttributes attributes,
+			HttpSession session) {
+		User user = getUserFromSession(session);
+		if (user == null || !user.getRole().equals("ADMIN")) {
+			attributes.addFlashAttribute("fail", "Invalid Session");
+			return "redirect:/login";
+		} else {
+
+			if (movieRepository.existsByNameAndReleaseDate(movieDto.getName(), movieDto.getReleaseDate()))
+				result.rejectValue("name", "error.name", "* Movie Already Exists");
+			if (movieDto.getImage().getSize() == 0)
+				result.rejectValue("image", "error.image", "* Image is Required");
+			if (result.hasErrors())
+				return "add-movie.html";
+
+			Movie movie = new Movie(null, movieDto.getName(), movieDto.getLanguages(), movieDto.getGenre(),
+					movieDto.getDuration(), cloudinaryHelper.generateImageLink(movieDto.getImage()),
+					movieDto.getTrailerLink(), movieDto.getDescription(), movieDto.getReleaseDate(),
+					movieDto.getCast());
+
+			movieRepository.save(movie);
+			attributes.addFlashAttribute("pass", "Movie Added Success");
+			return "redirect:/manage-movies";
+
 		}
 	}
 }
