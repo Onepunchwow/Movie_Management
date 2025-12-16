@@ -31,6 +31,7 @@ public class UserController {
 	
 	@GetMapping({"/","/main"})
 	public String loadMain() {
+		
 		return "main.html";
 	}
 	
