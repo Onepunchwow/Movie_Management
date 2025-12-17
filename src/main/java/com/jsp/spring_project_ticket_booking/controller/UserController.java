@@ -15,6 +15,7 @@ import com.jsp.spring_project_ticket_booking.dto.LoginDto;
 import com.jsp.spring_project_ticket_booking.dto.MovieDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
 import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
+import com.jsp.spring_project_ticket_booking.dto.SeatLayoutForm;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 import com.jsp.spring_project_ticket_booking.service.UserService;
@@ -31,7 +32,6 @@ public class UserController {
 	
 	@GetMapping({"/","/main"})
 	public String loadMain() {
-		
 		return "main.html";
 	}
 	
@@ -197,5 +197,10 @@ public class UserController {
 	@PostMapping("/add-movie")
 	public String addMovie(@Valid MovieDto movieDto,BindingResult result ,RedirectAttributes attributes, HttpSession session) {
 		return userService.addMovie(movieDto,result, attributes, session);
+	}
+	
+	@PostMapping("/add-seats/{id}")
+	public String saveSeats(@PathVariable Long id, SeatLayoutForm seatLayoutForm, HttpSession session, RedirectAttributes attributes) {
+	    return userService.saveSeats(id, seatLayoutForm, session, attributes);
 	}
 }

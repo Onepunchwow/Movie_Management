@@ -10,6 +10,7 @@ import com.jsp.spring_project_ticket_booking.dto.LoginDto;
 import com.jsp.spring_project_ticket_booking.dto.MovieDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
 import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
+import com.jsp.spring_project_ticket_booking.dto.SeatLayoutForm;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 
@@ -75,5 +76,7 @@ public interface UserService {
 	String loadAddMovie(MovieDto movieDto, RedirectAttributes attributes, HttpSession session);
 
 	String addMovie(@Valid MovieDto movieDto, BindingResult result, RedirectAttributes attributes, HttpSession session);
+
+	String saveSeats(Long id, SeatLayoutForm seatLayoutForm, HttpSession session, RedirectAttributes attributes);
 
 }
