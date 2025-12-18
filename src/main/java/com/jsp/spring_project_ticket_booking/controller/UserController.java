@@ -16,6 +16,7 @@ import com.jsp.spring_project_ticket_booking.dto.MovieDto;
 import com.jsp.spring_project_ticket_booking.dto.PasswordDto;
 import com.jsp.spring_project_ticket_booking.dto.ScreenDto;
 import com.jsp.spring_project_ticket_booking.dto.SeatLayoutForm;
+import com.jsp.spring_project_ticket_booking.dto.ShowDto;
 import com.jsp.spring_project_ticket_booking.dto.TheaterDto;
 import com.jsp.spring_project_ticket_booking.dto.UserDto;
 import com.jsp.spring_project_ticket_booking.service.UserService;
@@ -202,5 +203,21 @@ public class UserController {
 	@PostMapping("/add-seats/{id}")
 	public String saveSeats(@PathVariable Long id, SeatLayoutForm seatLayoutForm, HttpSession session, RedirectAttributes attributes) {
 	    return userService.saveSeats(id, seatLayoutForm, session, attributes);
+	}
+	
+	@GetMapping("/manage-shows/{id}")
+	public String manageShows(@PathVariable Long id, ModelMap map, RedirectAttributes attributes, HttpSession session) {
+		return userService.manageShows(id, map, attributes, session);
+	}
+
+	@GetMapping("/add-show/{id}")
+	public String addShow(@PathVariable Long id, ModelMap map, RedirectAttributes attributes, HttpSession session) {
+		return userService.addShow(id, map, attributes, session);
+	}
+
+	@PostMapping("/add-show")
+	public String addShow(@Valid ShowDto showDto, BindingResult result, RedirectAttributes attributes,
+			HttpSession session) {
+		return userService.addShow(showDto, result, attributes, session);
 	}
 }
