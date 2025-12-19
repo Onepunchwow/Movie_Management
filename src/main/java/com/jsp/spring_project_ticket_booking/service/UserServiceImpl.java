@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -654,18 +655,25 @@ public class UserServiceImpl implements UserService{
 			return "redirect:/login";
 		} else {
 			Screen screen = screenRepository.findById(id).orElseThrow();
+			List<Seat> seats = seatRepository.findByScreenOrderBySeatRowAscSeatColumnAsc(screen);
+
 			List<Movie> movies = movieRepository.findAll();
-			map.put("movies", movies);
-			ShowDto showDto = new ShowDto();
-			showDto.setScreenId(screen.getId());
-			map.put("showDto", showDto);
-			return "add-show";
+			if (!seats.isEmpty() && !movies.isEmpty()) {
+				map.put("movies", movies);
+				ShowDto showDto = new ShowDto();
+				showDto.setScreenId(screen.getId());
+				map.put("showDto", showDto);
+				return "add-show";
+			} else {
+				attributes.addFlashAttribute("fail", "First Add Movie and Add Seat Layout to continue");
+				return "redirect:/manage-screens/" + screen.getTheater().getId();
+			}
 		}
 	}
 
 	@Override
 	public String addShow(@Valid ShowDto showDto, BindingResult result, RedirectAttributes attributes,
-			HttpSession session) {
+			HttpSession session, ModelMap map) {
 		User user = getUserFromSession(session);
 		if (user == null || !user.getRole().equals("ADMIN")) {
 			attributes.addFlashAttribute("fail", "Invalid Session");
@@ -680,7 +688,7 @@ public class UserServiceImpl implements UserService{
 			if (!shows.isEmpty()) {
 				boolean flag = false;
 				for (Shows show : shows) {
-					if (showDto.getStartTime().isBefore(show.getEndTime())) {
+					if (show.getShowDate().isEqual(showDto.getShowDate()) && showDto.getStartTime().isBefore(show.getEndTime())) {
 						flag = true;
 						break;
 					}
@@ -690,6 +698,8 @@ public class UserServiceImpl implements UserService{
 			}
 
 			if (result.hasErrors()) {
+				List<Movie> movies = movieRepository.findAll();
+				map.put("movies", movies);
 				return "add-show";
 			} else {
 				Shows show = new Shows();
@@ -708,6 +718,7 @@ public class UserServiceImpl implements UserService{
 					ShowSeat showSeat = new ShowSeat();
 					showSeat.setBooked(false);
 					showSeat.setSeat(seat);
+					seats.add(showSeat);
 				}
 
 				show.setSeats(seats);
@@ -716,5 +727,16 @@ public class UserServiceImpl implements UserService{
 				return "redirect:/manage-shows/" + showDto.getScreenId();
 			}
 		}
+	}
+
+	@Override
+	public String loadMain(ModelMap map) {
+		List<Shows> shows=showsRepository.findAll();
+		HashSet<Movie> movies=new HashSet<Movie>();
+		for(Shows show:shows) {
+			movies.add(show.getMovie());
+		}
+		map.put("movies", movies);
+		return "main.html";
 	}
 }

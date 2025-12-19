@@ -32,8 +32,8 @@ public class UserController {
 	private final UserService userService;
 	
 	@GetMapping({"/","/main"})
-	public String loadMain() {
-		return "main.html";
+	public String loadMain(ModelMap map) {
+		return userService.loadMain(map);
 	}
 	
 	@GetMapping("/register")
@@ -217,7 +217,7 @@ public class UserController {
 
 	@PostMapping("/add-show")
 	public String addShow(@Valid ShowDto showDto, BindingResult result, RedirectAttributes attributes,
-			HttpSession session) {
-		return userService.addShow(showDto, result, attributes, session);
+			HttpSession session, ModelMap map) {
+		return userService.addShow(showDto, result, attributes, session, map);
 	}
 }
