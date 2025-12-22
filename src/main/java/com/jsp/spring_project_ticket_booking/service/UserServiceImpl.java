@@ -3,6 +3,7 @@ package com.jsp.spring_project_ticket_booking.service;
 import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -675,58 +676,92 @@ public class UserServiceImpl implements UserService{
 	public String addShow(@Valid ShowDto showDto, BindingResult result, RedirectAttributes attributes,
 			HttpSession session, ModelMap map) {
 		User user = getUserFromSession(session);
-		if (user == null || !user.getRole().equals("ADMIN")) {
-			attributes.addFlashAttribute("fail", "Invalid Session");
-			return "redirect:/login";
-		} else {
-			Movie movie = movieRepository.findById(showDto.getMovieId()).orElseThrow();
-			Screen screen = screenRepository.findById(showDto.getScreenId()).orElseThrow();
-			if (showDto.getShowDate().isBefore(movie.getReleaseDate()))
-				result.rejectValue("showDate", "error.showDate", "* Show Date Should be After Movie Release");
-
-			List<Shows> shows = showsRepository.findByScreen(screen);
-			if (!shows.isEmpty()) {
-				boolean flag = false;
-				for (Shows show : shows) {
-					if (show.getShowDate().isEqual(showDto.getShowDate()) && showDto.getStartTime().isBefore(show.getEndTime())) {
-						flag = true;
-						break;
-					}
-				}
-				if (flag)
-					result.rejectValue("startTime", "error.startTime", "* In Same Time There is One More Show");
-			}
-
-			if (result.hasErrors()) {
-				List<Movie> movies = movieRepository.findAll();
-				map.put("movies", movies);
-				return "add-show";
-			} else {
-				Shows show = new Shows();
-				show.setMovie(movie);
-				show.setScreen(screen);
-				show.setShowDate(showDto.getShowDate());
-				show.setStartTime(showDto.getStartTime());
-				show.setTicketPrice(showDto.getTicketPrice());
-				show.setEndTime(show.getStartTime().plusHours(movie.getDuration().getHour())
-						.plusMinutes(movie.getDuration().getMinute() + 30));
-
-				List<ShowSeat> seats = new ArrayList<ShowSeat>();
-
-				List<Seat> exSeats = seatRepository.findByScreenOrderBySeatRowAscSeatColumnAsc(screen);
-				for (Seat seat : exSeats) {
-					ShowSeat showSeat = new ShowSeat();
-					showSeat.setBooked(false);
-					showSeat.setSeat(seat);
-					seats.add(showSeat);
-				}
-
-				show.setSeats(seats);
-				showsRepository.save(show);
-				attributes.addFlashAttribute("pass", "Show Added Success");
-				return "redirect:/manage-shows/" + showDto.getScreenId();
-			}
+		if (user == null || !"ADMIN".equals(user.getRole())) {
+		    attributes.addFlashAttribute("fail", "Invalid Session");
+		    return "redirect:/login";
 		}
+
+		/* ---------- Fetch movie & screen ---------- */
+		Movie movie = movieRepository.findById(showDto.getMovieId())
+		        .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+		Screen screen = screenRepository.findById(showDto.getScreenId())
+		        .orElseThrow(() -> new RuntimeException("Screen not found"));
+
+		/* ---------- Validate show date ---------- */
+		if (showDto.getShowDate().isBefore(movie.getReleaseDate())) {
+		    result.rejectValue(
+		        "showDate",
+		        "error.showDate",
+		        "* Show Date Should be After Movie Release"
+		    );
+		}
+
+		/* ---------- Calculate new show time ---------- */
+		LocalTime newStart = showDto.getStartTime();
+		LocalTime newEnd = newStart
+		        .plusHours(movie.getDuration().getHour())
+		        .plusMinutes(movie.getDuration().getMinute() + 30); // cleanup buffer
+
+		/* ---------- Check time overlap ---------- */
+		List<Shows> existingShows = showsRepository.findByScreen(screen);
+
+		for (Shows existingShow : existingShows) {
+		    if (existingShow.getShowDate().isEqual(showDto.getShowDate())) {
+
+		        LocalTime existingStart = existingShow.getStartTime();
+		        LocalTime existingEnd = existingShow.getEndTime();
+
+		        boolean overlap =
+		                newStart.isBefore(existingEnd) &&
+		                newEnd.isAfter(existingStart);
+
+		        if (overlap) {
+		            result.rejectValue(
+		                "startTime",
+		                "error.startTime",
+		                "* Another show already exists in this time slot"
+		            );
+		            break;
+		        }
+		    }
+		}
+
+		/* ---------- If validation fails ---------- */
+		if (result.hasErrors()) {
+		    map.put("movies", movieRepository.findAll());
+		    return "add-show";
+		}
+
+		/* ---------- Save show ---------- */
+		Shows show = new Shows();
+		show.setMovie(movie);
+		show.setScreen(screen);
+		show.setShowDate(showDto.getShowDate());
+		show.setStartTime(newStart);
+		show.setEndTime(newEnd);
+		show.setTicketPrice(showDto.getTicketPrice());
+
+		/* ---------- Create show seats ---------- */
+		List<Seat> seats = seatRepository
+		        .findByScreenOrderBySeatRowAscSeatColumnAsc(screen);
+
+		List<ShowSeat> showSeats = new ArrayList<>();
+		for (Seat seat : seats) {
+		    ShowSeat showSeat = new ShowSeat();
+		    showSeat.setSeat(seat);
+		    showSeat.setBooked(false);
+		    showSeats.add(showSeat);
+		}
+
+		show.setSeats(showSeats);
+
+		/* ---------- Persist ---------- */
+		showsRepository.save(show);
+
+		attributes.addFlashAttribute("pass", "Show Added Successfully");
+		return "redirect:/manage-shows/" + showDto.getScreenId();
+
 	}
 
 	@Override
